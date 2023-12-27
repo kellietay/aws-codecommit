@@ -2,19 +2,26 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	// Replace these values with your CodeCommit repository details
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
 	repositoryURL := "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/kellie1"
-	userName := "kellie1-at-451644464983"
-	accessToken := "7dQniTmIysNxX3gCq6kKTrJXKTx7K9U01Fg/mpinWd8="
+	userName := os.Getenv("GIT_USERNAME")
+	accessToken := os.Getenv("GIT_ACCESS_TOKEN")
 
 	GoGitGetCommitsByRepository(repositoryURL, userName, accessToken)
 }
