@@ -99,12 +99,23 @@ func GetListRepos(ctx context.Context) {
 
 	for _, v := range repositoryList.Repositories {
 		fmt.Printf("repository ID: %+v, repository Name: %+v \n", *v.RepositoryId, *v.RepositoryName)
+		GetListBranches(ctx, v.RepositoryName)
 	}
 }
 
 func GetListBranches(ctx context.Context, repositoryName *string) {
-	// listBranchesInput := codecommit.ListBranchesInput{
-	// 	RepositoryName: repositoryName,
-	// }
+	listBranchesInput := codecommit.ListBranchesInput{
+		RepositoryName: repositoryName,
+	}
+
+	client, err := GetAWSCodeCommitClient(ctx)
+	CheckIfError(err)
+
+	branchList, err := client.ListBranches(ctx, &listBranchesInput)
+	CheckIfError(err)
+
+	for _, b := range branchList.Branches {
+		fmt.Printf("   --branch: %+v\n", b)
+	}
 
 }
