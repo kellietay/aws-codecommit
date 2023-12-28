@@ -116,6 +116,26 @@ func GetListBranches(ctx context.Context, repositoryName *string) {
 
 	for _, b := range branchList.Branches {
 		fmt.Printf("   --branch: %+v\n", b)
+		GetBranchInfo(ctx, repositoryName, b)
 	}
+
+}
+
+func GetBranchInfo(ctx context.Context, repositoryName *string, branchName string) {
+	getBranchInput := codecommit.GetBranchInput{
+		BranchName:     &branchName,
+		RepositoryName: repositoryName,
+	}
+
+	client, err := GetAWSCodeCommitClient(ctx)
+	CheckIfError(err)
+
+	branchInfo, err := client.GetBranch(ctx, &getBranchInput)
+	CheckIfError(err)
+	fmt.Printf("       --LastCommitID: %+v\n", *branchInfo.Branch.CommitId)
+
+}
+
+func GetCommitInfo(ctx context.Context, repositoryName *string) {
 
 }
