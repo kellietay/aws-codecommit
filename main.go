@@ -17,16 +17,19 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func main() {
+const (
+	USE_GO_GIT          = false
+	ONLY_DEFAULT_BRANCH = false
+)
 
-	UseGoGit := false
+func main() {
 
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
 
-	if UseGoGit {
+	if USE_GO_GIT {
 		GoGitGetCommitsByRepository()
 	}
 
@@ -74,7 +77,6 @@ func CheckIfError(err error) {
 }
 
 func GetAWSCodeCommitClient(ctx context.Context) (*codecommit.Client, error) {
-	// Load the Shared AWS Configuration (~/.aws/config)
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(os.Getenv("AWS_ACCESS_KEY"), os.Getenv("AWS_SECRET_ACCESS_KEY"), "")),
 		config.WithRegion("us-east-1"),
@@ -99,7 +101,28 @@ func GetListRepos(ctx context.Context) {
 
 	for _, v := range repositoryList.Repositories {
 		fmt.Printf("repository ID: %+v, repository Name: %+v \n", *v.RepositoryId, *v.RepositoryName)
-		GetListBranches(ctx, v.RepositoryName)
+		if ONLY_DEFAULT_BRANCH {
+			GetRepositoryDefaultBranch(ctx, v.RepositoryName)
+		} else {
+			GetListBranches(ctx, v.RepositoryName)
+		}
+	}
+}
+
+func GetRepositoryDefaultBranch(ctx context.Context, repositoryName *string) {
+	getRepositoryInput := codecommit.GetRepositoryInput{
+		RepositoryName: repositoryName,
+	}
+	client, err := GetAWSCodeCommitClient(ctx)
+	CheckIfError(err)
+
+	repository, err := client.GetRepository(ctx, &getRepositoryInput)
+	CheckIfError(err)
+
+	fmt.Printf("   -- default branch: %+v\n", repository.RepositoryMetadata.DefaultBranch)
+
+	if repository.RepositoryMetadata.DefaultBranch != nil {
+		GetBranchInfo(ctx, repositoryName, *repository.RepositoryMetadata.DefaultBranch)
 	}
 }
 
@@ -118,7 +141,6 @@ func GetListBranches(ctx context.Context, repositoryName *string) {
 		fmt.Printf("   --branch: %+v\n", b)
 		GetBranchInfo(ctx, repositoryName, b)
 	}
-
 }
 
 func GetBranchInfo(ctx context.Context, repositoryName *string, branchName string) {
