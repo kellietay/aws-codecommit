@@ -133,9 +133,34 @@ func GetBranchInfo(ctx context.Context, repositoryName *string, branchName strin
 	branchInfo, err := client.GetBranch(ctx, &getBranchInput)
 	CheckIfError(err)
 	fmt.Printf("       --LastCommitID: %+v\n", *branchInfo.Branch.CommitId)
+	fmt.Printf("       --Commit History:\n\n")
+	GetCommitInfo(ctx, repositoryName, branchInfo.Branch.CommitId)
 
 }
 
-func GetCommitInfo(ctx context.Context, repositoryName *string) {
+func GetCommitInfo(ctx context.Context, repositoryName *string, commitId *string) {
+	getCommitInput := codecommit.GetCommitInput{
+		CommitId:       commitId,
+		RepositoryName: repositoryName,
+	}
+
+	client, err := GetAWSCodeCommitClient(ctx)
+	CheckIfError(err)
+
+	commitInfo, err := client.GetCommit(ctx, &getCommitInput)
+	CheckIfError(err)
+
+	const colorRed = "\033[0;31m"
+	const colorNone = "\033[0m"
+
+	fmt.Printf("         %sCommit: %+v%s %+v\n", colorRed, *commitInfo.Commit.CommitId, *commitInfo.Commit.AdditionalData, colorNone)
+	fmt.Printf("           Author: %+v, Date: %+v\n\n", *commitInfo.Commit.Author.Name, *commitInfo.Commit.Author.Date)
+	fmt.Printf("                 %+v\n\n", *commitInfo.Commit.Message)
+
+	if len(commitInfo.Commit.Parents) != 0 {
+		for _, p := range commitInfo.Commit.Parents {
+			GetCommitInfo(ctx, repositoryName, &p)
+		}
+	}
 
 }
